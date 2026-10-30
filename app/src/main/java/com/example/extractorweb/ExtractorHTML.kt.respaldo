@@ -1,0 +1,82 @@
+package com.example.extractorweb
+
+data class ResultadoWeb(
+    val titulos: List<String>,
+    val enlaces: List<String>,
+    val imagenes: List<String>,
+    val textoVisible: String
+)
+
+class ExtractorHTML {
+
+    fun extraer(html: String): ResultadoWeb {
+        val titulos = mutableListOf<String>()
+        val enlaces = mutableListOf<String>()
+        val imagenes = mutableListOf<String>()
+
+        val tituloRegex = Regex(
+            """<(title|h1)[^>]*>(.*?)</(title|h1)>""",
+            RegexOption.IGNORE_CASE
+        )
+
+        for (m in tituloRegex.findAll(html)) {
+            val titulo = limpiarTexto(m.groupValues[2])
+            if (titulo.isNotBlank()) titulos.add(titulo)
+        }
+
+        val enlaceRegex = Regex(
+        val enlaceRegex = Regex(
+"""<a[^>]*href\s*=\s*["']([^"']+)["'][^>]*>""",
+            RegexOption.IGNORE_CASE
+        )
+            RegexOption.IGNORE_CASE
+        )
+
+        for (m in enlaceRegex.findAll(html)) {
+            enlaces.add(m.groupValues[1])
+        }
+
+        val imagenRegex = Regex(
+            """<img[^>]*src\s*=\s*["']([^"']+)["'][^>]*>""",
+            RegexOption.IGNORE_CASE
+        )
+
+        for (m in imagenRegex.findAll(html)) {
+            imagenes.add(m.groupValues[1])
+        }
+
+        val sinScripts = html.replace(
+            Regex("""<(script|style)[^>]*>[\s\S]*?</(script|style)>""", RegexOption.IGNORE_CASE),
+            " "
+        )
+
+        val sinComentarios = sinScripts.replace(
+            Regex("""<!--[\s\S]*?-->"""),
+            " "
+        )
+
+        val sinEtiquetas = sinComentarios.replace(
+            Regex("""<[^>]*>"""),
+            " "
+        )
+
+        return ResultadoWeb(
+            titulos = titulos.distinct(),
+            enlaces = enlaces.distinct(),
+            imagenes = imagenes.distinct(),
+            textoVisible = limpiarTexto(sinEtiquetas)
+        )
+    }
+
+    private fun limpiarTexto(texto: String): String {
+        return texto
+            .replace("&nbsp;", " ", ignoreCase = true)
+            .replace("&amp;", "&", ignoreCase = true)
+            .replace("&lt;", "<", ignoreCase = true)
+            .replace("&gt;", ">", ignoreCase = true)
+            .replace("&quot;", "\"", ignoreCase = true)
+            .replace("&#39;", "'", ignoreCase = true)
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+    }
+}
